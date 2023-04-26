@@ -122,3 +122,68 @@ use e_commerce
 
 > Till here, the basic mongoDB database is created and ready to run! to create multiple replica sets and secure it using TLS, follow these instructions!
 
+
+### Configuring DNS Resolution
+
+```
+sudo nano /etc/hosts
+```
+
+you can edit this file in this format :
+```
+. . .
+127.0.0.1 localhost
+
+203.0.113.0 mongo0.replset.member
+203.0.113.1 mongo1.replset.member
+203.0.113.2 mongo2.replset.member
+. . .
+```
+Updating Each Server’s Firewall Configurations with UFW
+```
+sudo ufw allow from mongo1_server_ip to any port 27017
+sudo ufw allow from mongo2_server_ip to any port 27017
+sudo ufw allow from mongo3_server_ip to any port 27017
+```
+
+Enabling Replication in Each Server’s MongoDB Configuration File
+```
+sudo nano /etc/mongod.conf
+```
+
+find `bindIp` And ``#replication`` and update like this on Each Server, make sure you change corresponding dns name like `mongo0.replset.member`, `mongo1.replset.member`, `mongo2.replset.member`
+```
+. . .
+# network interfaces
+net:
+  port: 27017
+  bindIp: 127.0.0.1,mongo0.replset.member
+  
+replication:
+  replSetName: "this_name_should_be_same_on_all_server"
+. . . 
+```
+
+Now restart the mongodb server
+```
+sudo systemctl restart mongod
+```
+
+Starting the Replica Set and Adding Members
+On mongo0, open up the MongoDB shell:
+```
+mongosh -u mongo_db_admin -p yourPasswordHere --authenticationDatabase admin
+```
+
+now initiate replicaset like this 
+```
+rs.initiate(
+   {
+   _id: "rs0",
+   members: [
+      { _id: 0, host: "mongo0.replset.member" },
+      { _id: 1, host: "mongo1.replset.member" },
+      { _id: 2, host: "mongo2.replset.member" }
+   ]
+})
+```
