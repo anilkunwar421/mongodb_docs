@@ -180,7 +180,9 @@ On mongo0, open up the MongoDB shell:
 ```
 mongosh -u mongo_db_admin -p yourPasswordHere --authenticationDatabase admin
 ```
-
+```
+use admin
+```
 now initiate replicaset like this 
 ```
 rs.initiate(
