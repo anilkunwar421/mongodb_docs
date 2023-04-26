@@ -187,3 +187,10 @@ rs.initiate(
    ]
 })
 ```
+Be aware that if you have additional nodes that you’d like to add to the replica set in the future, you can do so with the rs.add() method after configuring them as you did the current replica set members in the previous steps:
+```
+rs.add( "mongo3.replset.member" )
+```
+
+> Note: we completed the replica set setup and it should work fine with no issues, you can follow the bellow mentioned steps if you want to enable TLS too!
+
