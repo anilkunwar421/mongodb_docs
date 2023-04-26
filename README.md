@@ -41,7 +41,6 @@ The MongoDB package runs under the service mongod. Use the following systemctl c
 * Start the MongoDB service: 
 ```
 sudo systemctl start mongod
-
 ```
 * Enable the MongoDB service to be started on boot: 
 ```
