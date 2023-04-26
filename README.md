@@ -38,10 +38,23 @@ The MongoDB package runs under the service mongod. Use the following systemctl c
  ```
  sudo systemctl status mongod
 ```
-* Start the MongoDB service: ```sudo systemctl start mongod```
-* Enable the MongoDB service to be started on boot: ```sudo systemctl enable mongod```
-* Stop the MongoDB service: ```sudo systemctl stop mongod```
-* Restart the MongoDB service. For instance after making configuration changes: ```sudo systemctl restart mongod```
+* Start the MongoDB service: 
+```
+sudo systemctl start mongod
+
+```
+* Enable the MongoDB service to be started on boot: 
+```
+sudo systemctl enable mongod
+```
+* Stop the MongoDB service: 
+```
+sudo systemctl stop mongod
+```
+* Restart the MongoDB service. For instance after making configuration changes: 
+```
+sudo systemctl restart mongod
+```
 
 You can tweak MongoDB settings by modifying the configuration file in the location below. For instance, you can define a different data or log directory.
 
