@@ -3,8 +3,9 @@
 
 ### install mongoDB
 
-> wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
-
+```
+wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+```
 The operation should respond with an OK message.
 
 > OK
