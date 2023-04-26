@@ -90,3 +90,35 @@ db.createUser(
 ```
 Enter your desired password and press `ENTER` to proceed. Then, exit from the MongoDB command-line interface by issuing the command below.
 
+```
+quit
+```
+
+Next, open the MongoDB configuration file using the nano text editor to enable authorization which is disabled by default.
+```
+sudo nano /etc/mongod.conf
+```
+
+Change the value of the #security: setting to the following option.
+```
+security:
+
+  authorization: enabled
+```
+
+Save and close the file. Then, restart the MongoDB server to effect the new configuration changes.
+```
+sudo systemctl restart mongod
+```
+connect to your MongoDB instance by establishing a new `mongosh` session by executing the following command. The `mongo_db_admin` is the `superuser/root` account that you created earlier.
+```
+mongosh -u mongo_db_admin -p yourPasswordHere --authenticationDatabase admin
+```
+
+Create a new e_commerce database. Please note MongoDB does not support the CREATE DATABASE command. Instead, to set up a new database, simply switch the context to an empty database by executing the use command. To create the e_commerce database, run the following command.
+```
+use e_commerce
+```
+
+> Till here, the basic mongoDB database is created and ready to run! to create multiple replica sets and secure it using TLS, follow these instructions!
+
