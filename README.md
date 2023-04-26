@@ -60,7 +60,33 @@ You can tweak MongoDB settings by modifying the configuration file in the locati
 > /etc/mongod.conf
 
 
+### Configure Access Control on the MongoDB Server
 
+By default, the MongoDB service is not secure. You must enable access control and restrict read/write access to the server. To do this, connect to the MongoDB server through the mongosh shell.
+```
+mongosh
+```
 
+Once you receive the `test >` prompt, switch to the `admin` database.
+```
+use admin
+```
+Then, execute the following command to create an administrative user with `superuser/root` privileges.
+```
+db.createUser(
 
+      {
+
+        user: "mongo_db_admin",
+
+        pwd: passwordPrompt(),
+
+        roles: [ { role: "userAdminAnyDatabase", db: "admin" }, "root"]
+
+      }
+
+      ) 
+
+```
+Enter your desired password and press `ENTER` to proceed. Then, exit from the MongoDB command-line interface by issuing the command below.
 
