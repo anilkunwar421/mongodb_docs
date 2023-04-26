@@ -74,19 +74,14 @@ use admin
 Then, execute the following command to create an administrative user with `superuser/root` privileges.
 ```
 db.createUser(
-
       {
-
         user: "mongo_db_admin",
 
         pwd: passwordPrompt(),
 
         roles: [ { role: "userAdminAnyDatabase", db: "admin" }, "root"]
-
       }
-
-      ) 
-
+      )
 ```
 Enter your desired password and press `ENTER` to proceed. Then, exit from the MongoDB command-line interface by issuing the command below.
 
@@ -104,9 +99,20 @@ Change the value of the #security: setting to the following option.
 security:
 
   authorization: enabled
+  keyFile: /etc/mongodb-keyfile
 ```
 
-Save and close the file. Then, restart the MongoDB server to effect the new configuration changes.
+Save and close the file. Then, use this steps to generate `mongodb-keyfile`
+```
+touch /etc/mongodb-keyfile
+chmod 600 /etc/mongodb-keyfile
+openssl rand -base64 741 > /etc/mongodb-keyfile
+sudo chown mongodb:mongodb /etc/mongodb-keyfile
+sudo chown -R mongodb:mongodb /var/lib/mongodb
+sudo chown -R mongodb:mongodb /var/log/mongodb
+```
+
+restart the MongoDB server to effect the new configuration changes.
 ```
 sudo systemctl restart mongod
 ```
