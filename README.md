@@ -213,5 +213,9 @@ Be aware that if you have additional nodes that you’d like to add to the repli
 rs.add( "mongo3.replset.member" )
 ```
 
+In order to connect to mongoDB from your local machine, make sure you add firewall rules, replace `0.0.0.0` with your ip
+```
+sudo ufw allow from 0.0.0.0 to any port 27017
+```
 > Note: we completed the replica set setup and it should work fine with no issues, you can follow the bellow mentioned steps if you want to enable TLS too!
 
