@@ -112,6 +112,19 @@ sudo chown -R mongodb:mongodb /var/lib/mongodb
 sudo chown -R mongodb:mongodb /var/log/mongodb
 ```
 
+copy the mongodb-keyfile across all replica servers, make sure to replace `0.0.0.0` with server ip
+```
+scp /etc/mongodb-keyfile root@0.0.0.0:/etc/
+```
+
+now change permission of that file on those replica servers too
+```
+chmod 600 /etc/mongodb-keyfile
+sudo chown mongodb:mongodb /etc/mongodb-keyfile
+sudo chown -R mongodb:mongodb /var/lib/mongodb
+sudo chown -R mongodb:mongodb /var/log/mongodb
+```
+
 restart the MongoDB server to effect the new configuration changes.
 ```
 sudo systemctl restart mongod
