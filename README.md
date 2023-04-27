@@ -213,9 +213,47 @@ Be aware that if you have additional nodes that you’d like to add to the repli
 rs.add( "mongo3.replset.member" )
 ```
 
-In order to connect to mongoDB from your local machine, make sure you add firewall rules, replace `0.0.0.0` with your ip
+In order to connect mongoDB from your local machine, make sure you add firewall rules in each server, replace `0.0.0.0` with your ip
 ```
 sudo ufw allow from 0.0.0.0 to any port 27017
 ```
 > Note: we completed the replica set setup and it should work fine with no issues, you can follow the bellow mentioned steps if you want to enable TLS too!
 
+### Enable TLS
+Update your system:
+First, make sure your Ubuntu server is up-to-date by running the following commands:
+```
+sudo apt-get update
+sudo apt-get upgrade
+```
+create a new folder `/etc/mongodb-certificates` on all replica servers
+```
+mkdir /etc/mongodb-certificates
+```
+Give these permissions to folder `/etc/mongodb-certificates`
+```
+chown mongodb:mongodb /etc/mongodb-certificates
+chmod 700 /etc/mongodb-certificates
+```
+Create a Certificate Authority (CA):
+```
+openssl req -newkey rsa:4096 -nodes -keyout mongodb.key -x509 -days 365 -out mongodb.crt
+```
+copy the mongodb.key and mongodb.crt file across all replica servers, replace `0.0.0.0` with your server ip
+```
+scp /etc/mongodb-certificates/mongodb.key root@0.0.0.0:/etc/mongodb-certificates/
+```
+
+now on each server create .pem file like this :
+```
+openssl genrsa -out node1.key 4096
+```
+```
+openssl req -new -key node1.key -out node1.csr -subj
+```
+```
+"/C=COUNTRY_CODE/ST=COMPANY_STATE/L=COMPANY_CITY/O=COMPANY_NAME/emailAddress=business@example.com/CN=node1.example.com" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:node1.example.com"))
+```
+```
+openssl x509 -req -in node1.csr -CA mongodb.crt -CAkey mongodb.key -CAcreateserial -out node1.crt -days 365 -extfile <(printf "subjectAltName=DNS:node1.example.com")
+```
