@@ -255,3 +255,43 @@ openssl req -new -key node1.key -out node1.csr -subj
 ```
 openssl x509 -req -in node1.csr -CA mongodb.crt -CAkey mongodb.key -CAcreateserial -out node1.crt -days 365 -extfile <(printf "subjectAltName=DNS:node1.example.com")
 ```
+```
+cat node1.key node1.crt > node1.pem
+```
+
+Now you should have .pem file like `node1.pem`, `node2.pem`, node3.pem` and so on, It's time to update `/etc/mongod.conf`
+```
+nano /etc/mongod.conf
+```
+
+update like this on each replica server :
+```
+net:
+  tls:
+    mode: requireTLS
+    certificateKeyFile: /etc/mongodb-certificates/node1.pem
+    CAFile: /etc/mongodb-certificates/mongodb.crt
+  maxIncomingConnections: 999999
+  port: 27017
+  bindIp: 127.0.0.1, node1.example.com
+```
+```
+security:
+  authorization: enabled
+  keyFile: /etc/mongodb-keyfile
+  clusterAuthMode: x509
+```
+
+Once updated restart the mongodb server and check status
+```
+systemctl restart mongod.service
+```
+```
+systemctl status mongod.service
+```
+
+To connect database you can use command like this :
+```
+mongosh -u username -p your_password_here --authenticationDatabase admin --host "replicasetName/node1.example.com:27017,node2.example.com:27017,node3.example.com:27017" --tls --tlsCAFile /etc/mongodb-certificates/mongodb.crt --tlsCertificateKeyFile /etc/mongodb-certificates/node1.pem
+```
+> Following this documentation, you successfully installed tls on your mongodb database
