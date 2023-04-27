@@ -250,8 +250,6 @@ openssl genrsa -out node1.key 4096
 ```
 ```
 openssl req -new -key node1.key -out node1.csr -subj
-```
-```
 "/C=COUNTRY_CODE/ST=COMPANY_STATE/L=COMPANY_CITY/O=COMPANY_NAME/emailAddress=business@example.com/CN=node1.example.com" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:node1.example.com"))
 ```
 ```
