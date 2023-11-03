@@ -4,7 +4,7 @@
 ### install mongoDB
 
 ```
-wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
 ```
 The operation should respond with an OK message.
 
@@ -13,7 +13,7 @@ The operation should respond with an OK message.
 Next, create a list file for your MongoDB package under the /etc/apt/sources.list.d directory.
 
 ```
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
 ```
 Then, refresh the local package information index by issuing the following command.
 ```
@@ -116,6 +116,7 @@ copy the mongodb-keyfile across all replica servers, make sure to replace `0.0.0
 ```
 scp /etc/mongodb-keyfile root@0.0.0.0:/etc/
 ```
+While excecuting above command, a prompt may occur, type yes and it will also ask server password.
 
 now change permission of that file on those replica servers too
 ```
