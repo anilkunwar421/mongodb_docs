@@ -43,21 +43,32 @@ if [ "$last_replica" = "Yes" ]; then
     # Wait for MongoDB to restart
     sleep 10
     
-    # Check if domains are provided and fall back to IP if not
-    first_member=${first_replica_domain:-$replica1_ip}
-    second_member=${second_replica_domain:-$replica2_ip}
-    third_member=${third_replica_domain:-$replica3_ip}
+    # Check if MongoDB is ready
+    until mongosh --port 27017 -u "mongo_admin" -p "$ADMIN_PWD" --authenticationDatabase admin --eval "db.runCommand({ ping: 1 })"; do
+        echo "Waiting for MongoDB to start..."
+        sleep 5
+    done
     
-    # Connect to MongoDB and initiate replica set
-    mongosh --port 27017 -u "mongo_admin" -p "$ADMIN_PWD" --authenticationDatabase admin --eval "
-    use admin;
+    echo "Configuring the replica set..."
+    
+    # Execute the replica set initiation
+    output=$(mongosh --port 27017 -u "mongo_admin" -p "$ADMIN_PWD" --authenticationDatabase admin --eval "
     rs.initiate({
-        _id: 'testing',
+        _id: '$name',
         members: [
             { _id: 0, host: '$first_member' },
             { _id: 1, host: '$second_member' },
             { _id: 2, host: '$third_member' }
         ]
     });
-    "
+    " 2>&1)
+    
+    # Check the output for success or failure
+    if echo "$output" | grep -q "ok: 1"; then
+        echo "Replica set configured successfully."
+    else
+        echo "Failed to configure replica set:"
+        echo "$output"
+    fi
 fi
+
