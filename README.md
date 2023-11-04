@@ -145,6 +145,8 @@ use e_commerce
 
 ### Configuring DNS Resolution
 
+> Note : these 2 steps bellow is only required if you don't have domain assigned to your replica's ip
+
 ```
 sudo nano /etc/hosts
 ```
@@ -159,6 +161,9 @@ you can edit this file in this format :
 203.0.113.2 mongo2.replset.member
 . . .
 ```
+
+> Note : on Bellow step if you have domain assigned to your replica's ip, use replica domain instead of mongo0.replset.member ... as i am assuming here you don't have domain!
+
 Updating Each Server’s Firewall Configurations with UFW
 ```
 sudo ufw allow from mongo1_server_ip to any port 27017
