@@ -13,3 +13,6 @@ curl -o enable_tls.sh https://raw.githubusercontent.com/anilkunwar421/mongodb_do
 ./dns_setup.sh
 ```
 > Once mongodb is created, run the last file enable_tls.sh on each server
+```
+./enable_tls.sh
+```
