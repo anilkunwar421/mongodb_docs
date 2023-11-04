@@ -6,7 +6,7 @@ read -p "Is this your first replicaSet (yes/no): " first_replica
 read -p "Enter MongoDb admin user password (use the same on all replica set, username is mongo_admin): " replica_pw
 if [ "$first_replica" != "yes" ]; then
   read -p "Enter the first replica set member's IP address: " first_replica_ip
-  read -s -p "Enter the first replica set member's server SSH password: " first_replica_pw
+  read -p "Enter the first replica set member's server SSH password: " first_replica_pw
   echo ""  # Move to a new line after the password input
 fi
 
@@ -38,13 +38,13 @@ use admin
 db.createUser({
   user: "mongo_admin",
   pwd: "$replica_pw",
-  roles: [ { role: "userAdminAnyDatabase", db: "admin" } ]
+  roles: [ { role: "root", db: "admin" } ]
 })
 EOF
 #create a keyfile for authentication
 if [ "$first_replica" != "yes" ]; then
   # Use sshpass with scp to copy the keyfile from the first replica set member
-  sshpass -p "$first_replica_pw" scp root@"$first_replica_ip":/etc/mongodb-keyfile /etc/mongodb-keyfile
+  sshpass -p "$first_replica_pw" scp -o StrictHostKeyChecking=no root@"$first_replica_ip":/etc/mongodb-keyfile /etc/mongodb-keyfile
   
   # Ensure the permissions are correct
   chmod 600 /etc/mongodb-keyfile
