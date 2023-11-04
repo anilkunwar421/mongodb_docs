@@ -56,9 +56,14 @@ fi
 # Create node-specific key and CSR
 echo "Creating node-specific key and CSR..."
 sudo openssl genrsa -out /etc/mongodb-certificates/$DOMAIN_NAME.key 4096
+SAN_CONFIG=/tmp/san_config.$$.conf
+echo "[SAN]" > "$SAN_CONFIG"
+echo "subjectAltName=$with_dns" >> "$SAN_CONFIG"
 sudo openssl req -new -key /etc/mongodb-certificates/$DOMAIN_NAME.key -out /etc/mongodb-certificates/$DOMAIN_NAME.csr \
 -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" \
--reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
+-reqexts SAN -config <(cat /etc/ssl/openssl.cnf "$SAN_CONFIG")
+rm "$SAN_CONFIG"  # Remove temporary file after use
+
 # Ensure the permissions are correct
 chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.key
 chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.csr
@@ -67,9 +72,12 @@ sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
 
 # Sign the CSR with your CA
 echo "Signing the CSR with the CA..."
+SAN_CONFIG=/tmp/san_config.$$.conf
+echo "subjectAltName=$with_dns" > "$SAN_CONFIG"
 sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt \
 -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out /etc/mongodb-certificates/$DOMAIN_NAME.crt -days 365 \
--extfile <(printf "subjectAltName=$with_dns")
+-extfile "$SAN_CONFIG"
+rm "$SAN_CONFIG"  # Remove temporary file after use
 
 # Create the .pem file
 echo "Creating .pem file..."
