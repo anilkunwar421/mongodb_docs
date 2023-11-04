@@ -65,8 +65,8 @@ sudo cat /etc/mongodb-certificates/$DOMAIN_NAME.key /etc/mongodb-certificates/$D
 
 # Update the MongoDB configuration file
 echo "Updating the /etc/mongod.conf file with domain name $DOMAIN_NAME..."
-sudo sed -i "/^net:/a \ \ tls:\n\ \ \ \ mode: requireTLS\n\ \ \ \ certificateKeyFile: /etc/mongodb-certificates/$DOMAIN_NAME.pem\n\ \ \ \ CAFile: /etc/mongodb-certificates/mongodb.crt\n\ \ maxIncomingConnections: 999999" /etc/mongod.conf
-
+sudo sed -i "/^net:/a \ \ tls:\n\ \ \ \ mode: requireTLS\n\ \ \ \ certificateKeyFile: /etc/mongodb-certificates/$DOMAIN_NAME.pem\n\ \ \ \ CAFile: /etc/mongodb-certificates/mongodb.crt" /etc/mongod.conf
+sudo sed -i "/^net:/a \ \ maxIncomingConnections: 999999" /etc/mongod.conf
 # Restart and check the status of MongoDB
 echo "Restarting MongoDB and checking the status..."
 sudo systemctl restart mongod
