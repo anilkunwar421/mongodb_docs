@@ -35,7 +35,9 @@ sudo chmod 700 /etc/mongodb-certificates
 # Create a Certificate Authority
 echo "Creating a Certificate Authority..."
 if [ "$FIRST_REPLICA" = "yes" ]; then
-    sudo openssl req -newkey rsa:4096 -nodes -keyout /etc/mongodb-certificates/mongodb.key -x509 -days 365 -out /etc/mongodb-certificates/mongodb.crt
+    sudo openssl req -new -x509 -days 365 -keyout /etc/mongodb-certificates/mongodb.key -out /etc/mongodb-certificates/mongodb.crt \
+    -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME"
+    
     # Ensure the permissions are correct
     chmod 600 /etc/mongodb-certificates/mongodb.key
     chmod 600 /etc/mongodb-certificates/mongodb.crt
