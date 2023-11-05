@@ -35,3 +35,7 @@ rs.initiate(
    ]
 })
 ```
+### once all done, you can run dry test on each replica set server to make sure auto renew of ssl is working
+```
+sudo certbot renew --dry-run --deploy-hook "/root/update_mongo_certs.sh"
+```
