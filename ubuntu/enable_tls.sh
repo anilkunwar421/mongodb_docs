@@ -17,8 +17,8 @@ if [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
 fi
 
 # Install Certbot and issue certificate
-sudo apt-get install certbot python3-certbot-nginx --yes
-sudo ufw allow 80/tcp
+sudo apt install certbot --yes
+sudo ufw allow 80
 sudo certbot certonly --standalone --preferred-challenges http -d $DOMAIN --non-interactive --agree-tos --email $EMAIL
 cat /etc/letsencrypt/live/$DOMAIN/privkey.pem /etc/letsencrypt/live/$DOMAIN/fullchain.pem | sudo tee /etc/ssl/$DOMAIN.pem
 echo "Updating the /etc/mongod.conf file with domain name $DOMAIN..."
