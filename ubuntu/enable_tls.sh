@@ -51,7 +51,7 @@ else
         if ! $key_copied; then
             echo "Copying key from the first replica..."
             if sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.key /etc/mongodb-certificates/mongodb.key; then
-                echo "Key copied successfully."
+                echo "Key file copied successfully."
                 key_copied=true
             else
                 echo "Failed to copy key from the first replica."
@@ -61,7 +61,7 @@ else
         if ! $crt_copied; then
             echo "Copying certificate from the first replica..."
             if sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.crt /etc/mongodb-certificates/mongodb.crt; then
-                echo "Certificate copied successfully."
+                echo "Certificate file copied successfully."
                 crt_copied=true
             else
                 echo "Failed to copy certificate from the first replica."
@@ -102,6 +102,7 @@ sudo openssl genrsa -out /etc/mongodb-certificates/$DOMAIN_NAME.key 4096
 # Ensure the permissions are correct
 chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.key
 sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.key
+
 echo "Creating node-specific CSR"
 openssl req -new -key /etc/mongodb-certificates/$DOMAIN_NAME.key -out /etc/mongodb-certificates/$DOMAIN_NAME.csr -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
 # Ensure the permissions are correct
@@ -110,7 +111,7 @@ sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
 
 # Sign the CSR with your CA
 echo "Signing the CSR with the CA..."
-sudo openssl x509 -req -in $DOMAIN_NAME.csr -CA mongodb.crt -CAkey mongodb.key -CAcreateserial -out $DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
+sudo openssl x509 -req -in $DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out $DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
 
 # Create the .pem file
 echo "Creating .pem file..."
