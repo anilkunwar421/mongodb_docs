@@ -8,6 +8,7 @@ read -p "Enter Your or your company name (eg: MongoDB): " COMPANY_NAME
 read -p "Enter Your or your company email address: " EMAIL_ADDRESS
 read -p "do you have domain for these replica (yes/no): " DOMAIN
 read -p "is this your first replica (yes/no): " FIRST_REPLICA
+read -p "enter pass phrase for CA: " CA_PASSPHRASE
 if [ "$DOMAIN" = "yes" ]; then
     read -p "Enter Your or your company domain (eg: example.com): " DOMAIN_NAME
     with_dns="DNS:$DOMAIN_NAME"
@@ -35,8 +36,8 @@ sudo chmod 700 /etc/mongodb-certificates
 # Create a Certificate Authority
 echo "Creating a Certificate Authority..."
 if [ "$FIRST_REPLICA" = "yes" ]; then
-    sudo openssl req -new -x509 -days 365 -keyout /etc/mongodb-certificates/mongodb.key -out /etc/mongodb-certificates/mongodb.crt \
-    -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME"
+    echo "$CA_KEY_PASSPHRASE" | sudo openssl req -new -x509 -days 365 -keyout /etc/mongodb-certificates/mongodb.key -out /etc/mongodb-certificates/mongodb.crt \
+    -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" -passin stdin
     
     # Ensure the permissions are correct
     chmod 600 /etc/mongodb-certificates/mongodb.key
@@ -111,7 +112,7 @@ sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
 
 # Sign the CSR with your CA
 echo "Signing the CSR with the CA..."
-sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out $DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
+echo "$CA_KEY_PASSPHRASE" | sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out /etc/mongodb-certificates/$DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns") -passin stdin
 
 # Create the .pem file
 echo "Creating .pem file..."
