@@ -8,7 +8,8 @@ read -p "Enter Your or your company name (eg: MongoDB): " COMPANY_NAME
 read -p "Enter Your or your company email address: " EMAIL_ADDRESS
 read -p "do you have domain for these replica (yes/no): " DOMAIN
 read -p "is this your first replica (yes/no): " FIRST_REPLICA
-# read -p "enter pass phrase for CA: " CA_KEY_PASSPHRASE
+read -p "Enter passphrase for the CA key: " CA_KEY_PASSPHRASE
+echo
 if [ "$DOMAIN" = "yes" ]; then
     read -p "Enter Your or your company domain (eg: example.com): " DOMAIN_NAME
     with_dns="DNS:$DOMAIN_NAME"
@@ -37,7 +38,8 @@ sudo chmod 700 /etc/mongodb-certificates
 echo "Creating a Certificate Authority..."
 if [ "$FIRST_REPLICA" = "yes" ]; then
     sudo openssl req -new -x509 -days 365 -keyout /etc/mongodb-certificates/mongodb.key -out /etc/mongodb-certificates/mongodb.crt \
-    -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME"
+    -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" \
+    -aes256 -passout pass:$CA_KEY_PASSPHRASE
     
     # Ensure the permissions are correct
     chmod 600 /etc/mongodb-certificates/mongodb.key
@@ -110,16 +112,31 @@ openssl req -new -key /etc/mongodb-certificates/$DOMAIN_NAME.key -out /etc/mongo
 chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.csr
 sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
 
-# Sign the CSR with your CA
-echo "Signing the CSR with the CA..."
-sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out /etc/mongodb-certificates/$DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
+# Sign the CSR with your CA, only if the CSR was successfully created
+if [ -f "/etc/mongodb-certificates/$DOMAIN_NAME.csr" ]; then
+    echo "Signing the CSR with the CA..."
+    sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out /etc/mongodb-certificates/$DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
 
-# Create the .pem file
-echo "Creating .pem file..."
-sudo cat /etc/mongodb-certificates/$DOMAIN_NAME.key /etc/mongodb-certificates/$DOMAIN_NAME.crt > /etc/mongodb-certificates/$DOMAIN_NAME.pem
-# Ensure the permissions are correct
-chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.pem
-sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.pem
+    # Check if the certificate file was created successfully
+    if [ -f "/etc/mongodb-certificates/$DOMAIN_NAME.crt" ]; then
+        echo "Certificate was created successfully."
+
+        # Continue with the creation of the .pem file
+        echo "Creating .pem file..."
+        sudo cat /etc/mongodb-certificates/$DOMAIN_NAME.key /etc/mongodb-certificates/$DOMAIN_NAME.crt > /etc/mongodb-certificates/$DOMAIN_NAME.pem
+
+        # Ensure the permissions are correct
+        chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.pem
+        sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.pem
+    else
+        echo "Failed to create the certificate file."
+        exit 1
+    fi
+else
+    echo "CSR file does not exist, ensure CSR was created successfully."
+    exit 1
+fi
+
 
 # Update the MongoDB configuration file
 echo "Updating the /etc/mongod.conf file with domain name $DOMAIN_NAME..."
