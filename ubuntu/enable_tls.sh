@@ -1,151 +1,50 @@
 #!/bin/bash
 
 # Prompt user for input
-read -p "Enter Your or your company country code (eg: US, CA): " COUNTRY_CODE
-read -p "Enter Your or your company state (eg: California): " COMPANY_STATE
-read -p "Enter Your or your company city (eg: San Francisco): " COMPANY_CITY
-read -p "Enter Your or your company name (eg: MongoDB): " COMPANY_NAME
-read -p "Enter Your or your company email address: " EMAIL_ADDRESS
-read -p "do you have domain for these replica (yes/no): " DOMAIN
-read -p "is this your first replica (yes/no): " FIRST_REPLICA
-read -p "Enter passphrase for the CA key: " CA_KEY_PASSPHRASE
-echo
-if [ "$DOMAIN" = "yes" ]; then
-    read -p "Enter Your or your company domain (eg: example.com): " DOMAIN_NAME
-    with_dns="DNS:$DOMAIN_NAME"
-else
-    DOMAIN_NAME=$(curl -s ipinfo.io/ip)
-    with_dns="IP:$DOMAIN_NAME"
-fi
-if [ "$FIRST_REPLICA" = "no" ]; then
-    read -p "Enter IP of first replica: " FIRST_REPLICA_IP
-    read -p "Enter Password of first replica: " FIRST_REPLICA_PASSWORD
-fi
-# Update the system
-echo "Updating the system..."
-sudo apt-get update -y
+read -p "Enter your or your company email: " EMAIL
+read -p "Enter domain for this replica: " DOMAIN
 
-# Create the new directory for MongoDB certificates
-echo "Creating /etc/mongodb-certificates directory..."
-sudo mkdir -p /etc/mongodb-certificates
+# Get the server's public IP address
+SERVER_IP=$(curl -s ipinfo.io/ip)
 
-# Set the ownership and permissions for the directory
-echo "Setting permissions for /etc/mongodb-certificates..."
-sudo chown mongodb:mongodb /etc/mongodb-certificates
-sudo chmod 700 /etc/mongodb-certificates
+# Perform a DNS lookup to get the IP address that the domain points to
+DOMAIN_IP=$(nslookup $DOMAIN | awk '/^Address: / { print $2 ; exit }')
 
-# Create a Certificate Authority
-echo "Creating a Certificate Authority..."
-if [ "$FIRST_REPLICA" = "yes" ]; then
-    sudo openssl req -new -x509 -days 365 -keyout /etc/mongodb-certificates/mongodb.key -out /etc/mongodb-certificates/mongodb.crt \
-    -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" \
-    -aes256 -passout pass:$CA_KEY_PASSPHRASE
-    
-    # Ensure the permissions are correct
-    chmod 600 /etc/mongodb-certificates/mongodb.key
-    chmod 600 /etc/mongodb-certificates/mongodb.crt
-    sudo chown mongodb:mongodb /etc/mongodb-certificates/mongodb.key
-    sudo chown mongodb:mongodb /etc/mongodb-certificates/mongodb.crt
-else
-    key_copied=false
-    crt_copied=false
-    
-    while true; do
-        if ! $key_copied; then
-            echo "Copying key from the first replica..."
-            if sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.key /etc/mongodb-certificates/mongodb.key; then
-                echo "Key file copied successfully."
-                key_copied=true
-            else
-                echo "Failed to copy key from the first replica."
-            fi
-        fi
-        
-        if ! $crt_copied; then
-            echo "Copying certificate from the first replica..."
-            if sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.crt /etc/mongodb-certificates/mongodb.crt; then
-                echo "Certificate file copied successfully."
-                crt_copied=true
-            else
-                echo "Failed to copy certificate from the first replica."
-            fi
-        fi
-        
-        if $key_copied && $crt_copied; then
-            break
-        else
-            read -p "Leave empty to retry or enter 1 to exit: " user_choice
-            if [[ "$user_choice" == "1" ]]; then
-                read -p "Enter 1 to modify FIRST_REPLICA_PASSWORD or FIRST_REPLICA_IP, leave empty to exit: " modify_choice
-                if [[ "$modify_choice" == "1" ]]; then
-                    read -p "Enter new FIRST_REPLICA_IP (current: $FIRST_REPLICA_IP) or leave empty to keep current: " new_ip
-                    if [[ ! -z "$new_ip" ]]; then
-                        FIRST_REPLICA_IP="$new_ip"
-                    fi
-                    read -p "Enter new FIRST_REPLICA_PASSWORD (current: $FIRST_REPLICA_PASSWORD) or leave empty to keep current: " new_password
-                    if [[ ! -z "$new_password" ]]; then
-                        FIRST_REPLICA_PASSWORD="$new_password"
-                    fi
-                else
-                    exit 1
-                fi
-            fi
-        fi
-    done
-    # Ensure the permissions are correct
-    chmod 600 /etc/mongodb-certificates/mongodb.key
-    chmod 600 /etc/mongodb-certificates/mongodb.crt
-    sudo chown mongodb:mongodb /etc/mongodb-certificates/mongodb.key
-    sudo chown mongodb:mongodb /etc/mongodb-certificates/mongodb.crt
-fi
-
-# Create node-specific key and CSR
-echo "Creating node-specific key"
-sudo openssl genrsa -out /etc/mongodb-certificates/$DOMAIN_NAME.key 4096
-# Ensure the permissions are correct
-chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.key
-sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.key
-
-echo "Creating node-specific CSR"
-openssl req -new -key /etc/mongodb-certificates/$DOMAIN_NAME.key -out /etc/mongodb-certificates/$DOMAIN_NAME.csr -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
-# Ensure the permissions are correct
-chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.csr
-sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
-
-# Sign the CSR with your CA, only if the CSR was successfully created
-if [ -f "/etc/mongodb-certificates/$DOMAIN_NAME.csr" ]; then
-    echo "Signing the CSR with the CA..."
-    sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out /etc/mongodb-certificates/$DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
-
-    # Check if the certificate file was created successfully
-    if [ -f "/etc/mongodb-certificates/$DOMAIN_NAME.crt" ]; then
-        echo "Certificate was created successfully."
-
-        # Continue with the creation of the .pem file
-        echo "Creating .pem file..."
-        sudo cat /etc/mongodb-certificates/$DOMAIN_NAME.key /etc/mongodb-certificates/$DOMAIN_NAME.crt > /etc/mongodb-certificates/$DOMAIN_NAME.pem
-
-        # Ensure the permissions are correct
-        chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.pem
-        sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.pem
-    else
-        echo "Failed to create the certificate file."
-        exit 1
-    fi
-else
-    echo "CSR file does not exist, ensure CSR was created successfully."
+# Check if the domain IP matches the server IP
+if [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+    echo "Error: Domain is not pointed to this server's IP ($SERVER_IP). Please update DNS settings and try again."
     exit 1
 fi
 
-
-# Update the MongoDB configuration file
-echo "Updating the /etc/mongod.conf file with domain name $DOMAIN_NAME..."
-sudo sed -i "/^net:/a \ \ tls:\n\ \ \ \ mode: requireTLS\n\ \ \ \ certificateKeyFile: /etc/mongodb-certificates/$DOMAIN_NAME.pem\n\ \ \ \ CAFile: /etc/mongodb-certificates/mongodb.crt" /etc/mongod.conf
+# Install Certbot and issue certificate
+sudo apt-get install certbot python3-certbot-nginx --yes
+sudo ufw allow 80/tcp
+sudo certbot certonly --standalone --preferred-challenges http -d $DOMAIN --non-interactive --agree-tos --email $EMAIL
+cat /etc/letsencrypt/live/$DOMAIN/privkey.pem /etc/letsencrypt/live/$DOMAIN/fullchain.pem | sudo tee /etc/ssl/$DOMAIN.pem
+echo "Updating the /etc/mongod.conf file with domain name $DOMAIN..."
+sudo sed -i "/^net:/a \ \ tls:\n\ \ \ \ mode: requireTLS\n\ \ \ \ certificateKeyFile: /etc/ssl/$DOMAIN.pem" /etc/mongod.conf
 sudo sed -i "/^net:/a \ \ maxIncomingConnections: 999999" /etc/mongod.conf
-# Restart and check the status of MongoDB
-echo "Restarting MongoDB and checking the status..."
 sudo systemctl restart mongod
-sleep 10
-sudo systemctl status mongod --no-pager
+echo "Setting up automatic renewal of the certificate..."
+#create update_mongo_certs.sh file
+cat <<EOF > update_mongo_certs.sh
+#!/bin/bash
 
-echo "Script execution completed!"
+# Combine private key and full chain into one PEM file for MongoDB
+cat /etc/letsencrypt/live/$DOMAIN/privkey.pem /etc/letsencrypt/live/$DOMAIN/fullchain.pem > /etc/ssl/$DOMAIN.pem
+
+# Set the permissions so only the root user can read the combined PEM file
+chmod 600 /etc/ssl/$DOMAIN.pem
+
+# Restart MongoDB to apply the new certificates
+systemctl restart mongod
+
+# Log an update message
+echo "MongoDB certificates updated and service restarted."
+
+# Exit the script
+exit 0
+EOF
+chmod +x update_mongo_certs.sh
+(crontab -l 2>/dev/null; echo "17 3,15 * * * certbot renew --noninteractive --deploy-hook \"/root/update_mongo_certs.sh\"") | crontab -
+systemctl restart cron
