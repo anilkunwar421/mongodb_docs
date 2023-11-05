@@ -111,7 +111,7 @@ sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
 
 # Sign the CSR with your CA
 echo "Signing the CSR with the CA..."
-sudo openssl x509 -req -in $DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out $DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
+sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt -CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out $DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
 
 # Create the .pem file
 echo "Creating .pem file..."
