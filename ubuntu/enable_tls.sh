@@ -56,13 +56,13 @@ fi
 # Create node-specific key and CSR
 echo "Creating node-specific key"
 sudo openssl genrsa -out /etc/mongodb-certificates/$DOMAIN_NAME.key 4096
-echo "Creating node-specific CSR"
-openssl req -new -key $DOMAIN_NAME.key -out $DOMAIN_NAME.csr -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
-
 # Ensure the permissions are correct
 chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.key
-chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.csr
 sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.key
+echo "Creating node-specific CSR"
+openssl req -new -key /etc/mongodb-certificates/$DOMAIN_NAME.key -out /etc/mongodb-certificates/$DOMAIN_NAME.csr -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
+# Ensure the permissions are correct
+chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.csr
 sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
 
 # Sign the CSR with your CA
