@@ -17,3 +17,21 @@ curl -o enable_tls.sh https://raw.githubusercontent.com/anilkunwar421/mongodb_do
 ```
 ./enable_tls.sh
 ```
+### dns_setup.sh file maynot successfully initiate the replicaset, if this happended, follow this
+```
+mongosh -u mongo_db_admin -p yourPasswordHere --authenticationDatabase admin
+```
+```
+use admin
+```
+```
+rs.initiate(
+   {
+   _id: "replica_set_name",
+   members: [
+      { _id: 0, host: "replica1.example.com" },
+      { _id: 1, host: "replica2.example.com" },
+      { _id: 2, host: "replica3.example.com" }
+   ]
+})
+```
