@@ -54,12 +54,10 @@ else
 fi
 
 # Create node-specific key and CSR
-echo "Creating node-specific key and CSR..."
+echo "Creating node-specific key"
 sudo openssl genrsa -out /etc/mongodb-certificates/$DOMAIN_NAME.key 4096
-sudo openssl req -new -key /etc/mongodb-certificates/$DOMAIN_NAME.key -out /etc/mongodb-certificates/$DOMAIN_NAME.csr \
--subj "/C=NP/ST=Gandaki/L=Pokhara/O=test/emailAddress=test@example.com/CN=$DOMAIN_NAME" \
--reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
-
+echo "Creating node-specific CSR"
+openssl req -new -key $DOMAIN_NAME.key -out $DOMAIN_NAME.csr -subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
 
 # Ensure the permissions are correct
 chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.key
