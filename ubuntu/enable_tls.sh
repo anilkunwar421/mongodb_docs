@@ -7,8 +7,8 @@ read -p "Enter Your or your company city (eg: San Francisco): " COMPANY_CITY
 read -p "Enter Your or your company name (eg: MongoDB): " COMPANY_NAME
 read -p "Enter Your or your company email address: " EMAIL_ADDRESS
 read -p "do you have domain for these replica (yes/no): " DOMAIN
-read -p "is this your first replica (yes/no): " CA_KEY_PASSPHRASE
-read -p "enter pass phrase for CA: " CA_PASSPHRASE
+read -p "is this your first replica (yes/no): " FIRST_REPLICA
+read -p "enter pass phrase for CA: " CA_KEY_PASSPHRASE
 if [ "$DOMAIN" = "yes" ]; then
     read -p "Enter Your or your company domain (eg: example.com): " DOMAIN_NAME
     with_dns="DNS:$DOMAIN_NAME"
