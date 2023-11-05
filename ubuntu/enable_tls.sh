@@ -12,7 +12,7 @@ if [ "$DOMAIN" = "yes" ]; then
     read -p "Enter Your or your company domain (eg: example.com): " DOMAIN_NAME
     with_dns="DNS:$DOMAIN_NAME"
 else
-    read -p "Enter replica ip address (eg: 192.168.0.1): " DOMAIN_NAME
+    DOMAIN_NAME=$(curl -s ipinfo.io/ip)
     with_dns="IP:$DOMAIN_NAME"
 fi
 if [ "$FIRST_REPLICA" = "no" ]; then
@@ -44,8 +44,51 @@ if [ "$FIRST_REPLICA" = "yes" ]; then
     sudo chown mongodb:mongodb /etc/mongodb-certificates/mongodb.key
     sudo chown mongodb:mongodb /etc/mongodb-certificates/mongodb.crt
 else
-    sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.key /etc/mongodb-certificates/mongodb.key
-    sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.crt /etc/mongodb-certificates/mongodb.crt
+    key_copied=false
+    crt_copied=false
+    
+    while true; do
+        if ! $key_copied; then
+            echo "Copying key from the first replica..."
+            if sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.key /etc/mongodb-certificates/mongodb.key; then
+                echo "Key copied successfully."
+                key_copied=true
+            else
+                echo "Failed to copy key from the first replica."
+            fi
+        fi
+        
+        if ! $crt_copied; then
+            echo "Copying certificate from the first replica..."
+            if sshpass -p "$FIRST_REPLICA_PASSWORD" scp -o StrictHostKeyChecking=no root@"$FIRST_REPLICA_IP":/etc/mongodb-certificates/mongodb.crt /etc/mongodb-certificates/mongodb.crt; then
+                echo "Certificate copied successfully."
+                crt_copied=true
+            else
+                echo "Failed to copy certificate from the first replica."
+            fi
+        fi
+        
+        if $key_copied && $crt_copied; then
+            break
+        else
+            read -p "Leave empty to retry or enter 1 to exit: " user_choice
+            if [[ "$user_choice" == "1" ]]; then
+                read -p "Enter 1 to modify FIRST_REPLICA_PASSWORD or FIRST_REPLICA_IP, leave empty to exit: " modify_choice
+                if [[ "$modify_choice" == "1" ]]; then
+                    read -p "Enter new FIRST_REPLICA_IP (current: $FIRST_REPLICA_IP) or leave empty to keep current: " new_ip
+                    if [[ ! -z "$new_ip" ]]; then
+                        FIRST_REPLICA_IP="$new_ip"
+                    fi
+                    read -p "Enter new FIRST_REPLICA_PASSWORD (current: $FIRST_REPLICA_PASSWORD) or leave empty to keep current: " new_password
+                    if [[ ! -z "$new_password" ]]; then
+                        FIRST_REPLICA_PASSWORD="$new_password"
+                    fi
+                else
+                    exit 1
+                fi
+            fi
+        fi
+    done
     # Ensure the permissions are correct
     chmod 600 /etc/mongodb-certificates/mongodb.key
     chmod 600 /etc/mongodb-certificates/mongodb.crt
