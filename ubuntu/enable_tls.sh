@@ -56,26 +56,10 @@ fi
 # Create node-specific key and CSR
 echo "Creating node-specific key and CSR..."
 sudo openssl genrsa -out /etc/mongodb-certificates/$DOMAIN_NAME.key 4096
-
-# Create a temporary config file for the OpenSSL SAN configuration
-SAN_CONFIG=/tmp/san_config.$$.conf
-cat /etc/ssl/openssl.cnf > "$SAN_CONFIG"
-echo "[SAN]" >> "$SAN_CONFIG"
-echo "subjectAltName=$with_dns" >> "$SAN_CONFIG"
-
-# Generate the CSR using the temporary SAN config file
 sudo openssl req -new -key /etc/mongodb-certificates/$DOMAIN_NAME.key -out /etc/mongodb-certificates/$DOMAIN_NAME.csr \
--subj "/C=$COUNTRY_CODE/ST=$COMPANY_STATE/L=$COMPANY_CITY/O=$COMPANY_NAME/emailAddress=$EMAIL_ADDRESS/CN=$DOMAIN_NAME" \
--config "$SAN_CONFIG"
+-subj "/C=NP/ST=Gandaki/L=Pokhara/O=test/emailAddress=test@example.com/CN=$DOMAIN_NAME" \
+-reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=$with_dns"))
 
-# Clean up the SAN config file
-rm "$SAN_CONFIG"
-
-# Check if CSR was created before proceeding
-if [ ! -f /etc/mongodb-certificates/$DOMAIN_NAME.csr ]; then
-    echo "CSR was not created. Please check OpenSSL config and permissions."
-    exit 1
-fi
 
 # Ensure the permissions are correct
 chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.key
@@ -83,17 +67,9 @@ chmod 600 /etc/mongodb-certificates/$DOMAIN_NAME.csr
 sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.key
 sudo chown mongodb:mongodb /etc/mongodb-certificates/$DOMAIN_NAME.csr
 
-# Sign the CSR with your CA (assuming the previous steps were successful)
+# Sign the CSR with your CA
 echo "Signing the CSR with the CA..."
-sudo openssl x509 -req -in /etc/mongodb-certificates/$DOMAIN_NAME.csr -CA /etc/mongodb-certificates/mongodb.crt \
--CAkey /etc/mongodb-certificates/mongodb.key -CAcreateserial -out /etc/mongodb-certificates/$DOMAIN_NAME.crt -days 365 \
--extfile <(echo "subjectAltName=$with_dns")
-
-# Check if the certificate was created before proceeding
-if [ ! -f /etc/mongodb-certificates/$DOMAIN_NAME.crt ]; then
-    echo "Certificate was not signed. Please check the CSR and CA certificate."
-    exit 1
-fi
+sudo openssl x509 -req -in $DOMAIN_NAME.csr -CA mongodb.crt -CAkey mongodb.key -CAcreateserial -out $DOMAIN_NAME.crt -days 365 -extfile <(printf "subjectAltName=$with_dns")
 
 # Create the .pem file
 echo "Creating .pem file..."
