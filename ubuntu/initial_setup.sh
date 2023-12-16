@@ -31,7 +31,7 @@ sudo systemctl enable mongod
 sudo systemctl stop mongod
 sudo systemctl start mongod
 # Wait for MongoDB to restart
-sleep 10
+sudo sleep 10
 #Connect to MongoDB without access control.
 mongosh --port 27017 <<EOF
 use admin
@@ -44,18 +44,18 @@ EOF
 #create a keyfile for authentication
 if [ "$first_replica" != "yes" ]; then
   # Use sshpass with scp to copy the keyfile from the first replica set member
-  sshpass -p "$first_replica_pw" scp -o StrictHostKeyChecking=no root@"$first_replica_ip":/etc/mongodb-keyfile /etc/mongodb-keyfile
+  sudo sshpass -p "$first_replica_pw" scp -o StrictHostKeyChecking=no root@"$first_replica_ip":/etc/mongodb-keyfile /etc/mongodb-keyfile
   
   # Ensure the permissions are correct
-  chmod 600 /etc/mongodb-keyfile
+  sudo chmod 600 /etc/mongodb-keyfile
   sudo chown mongodb:mongodb /etc/mongodb-keyfile
   sudo chown -R mongodb:mongodb /var/lib/mongodb
   sudo chown -R mongodb:mongodb /var/log/mongodb
   else
   # If this is the first replica set member, create the keyfile
-  touch /etc/mongodb-keyfile
-  chmod 600 /etc/mongodb-keyfile
-  openssl rand -base64 741 > /etc/mongodb-keyfile
+  sudo touch /etc/mongodb-keyfile
+  sudo chmod 600 /etc/mongodb-keyfile
+  sudo openssl rand -base64 741 > /etc/mongodb-keyfile
   sudo chown mongodb:mongodb /etc/mongodb-keyfile
   sudo chown -R mongodb:mongodb /var/lib/mongodb
   sudo chown -R mongodb:mongodb /var/log/mongodb
