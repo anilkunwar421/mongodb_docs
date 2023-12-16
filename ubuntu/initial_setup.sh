@@ -47,14 +47,14 @@ if [ "$first_replica" != "yes" ]; then
   sudo sshpass -p "$first_replica_pw" scp -o StrictHostKeyChecking=no root@"$first_replica_ip":/etc/mongodb-keyfile /etc/mongodb-keyfile
   
   # Ensure the permissions are correct
-  sudo chmod 600 /etc/mongodb-keyfile
+  sudo chmod 644 /etc/mongodb-keyfile
   sudo chown mongodb:mongodb /etc/mongodb-keyfile
   sudo chown -R mongodb:mongodb /var/lib/mongodb
   sudo chown -R mongodb:mongodb /var/log/mongodb
   else
   # If this is the first replica set member, create the keyfile
   sudo touch /etc/mongodb-keyfile
-  sudo chmod 600 /etc/mongodb-keyfile
+  sudo chmod 644 /etc/mongodb-keyfile
   sudo openssl rand -base64 741 > /etc/mongodb-keyfile
   sudo chown mongodb:mongodb /etc/mongodb-keyfile
   sudo chown -R mongodb:mongodb /var/lib/mongodb
