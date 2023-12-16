@@ -11,10 +11,10 @@ SERVER_IP=$(curl -s ipinfo.io/ip)
 DOMAIN_IP=$(nslookup $DOMAIN | awk '/^Address: / { print $2 ; exit }')
 
 # Check if the domain IP matches the server IP
-if [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
-    echo "Error: Domain is not pointed to this server's IP ($SERVER_IP). Please update DNS settings and try again."
-    exit 1
-fi
+# if [ "$DOMAIN_IP" != "$SERVER_IP" ]; then
+#     echo "Error: Domain is not pointed to this server's IP ($SERVER_IP). Please update DNS settings and try again."
+#     exit 1
+# fi
 
 # Install Certbot and issue certificate
 sudo apt install certbot --yes
